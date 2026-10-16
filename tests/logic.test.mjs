@@ -54,3 +54,16 @@ test('makeChoice puts correct + 3 wrong in 4 options and points answer at correc
   }
   assert.equal(positions.size, 4);
 });
+
+test('makeIntruder on a 2-item list asks for the one real item among 3 fakes', () => {
+  const two = { items: ['환경 개선', '교육으로 행동 변화'], fakes: ['처벌 강화', '보험 확대', '통계 발표'] };
+  for (let seed = 1; seed <= 20; seed++) {
+    const { options, answer, ask } = makeIntruder(two, seededRng(seed));
+    assert.equal(ask, 'in');
+    assert.equal(options.length, 4);
+    assert.equal(new Set(options).size, 4);
+    assert.ok(two.items.includes(options[answer]));
+    assert.equal(options.filter((o) => two.items.includes(o)).length, 1);
+  }
+  assert.equal(makeIntruder(list, seededRng(1)).ask, 'out');
+});

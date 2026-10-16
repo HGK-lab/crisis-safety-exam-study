@@ -158,7 +158,7 @@
   }
 
   function renderIntruder(l, body, card) {
-    const { options, answer } = Logic.makeIntruder(l);
+    const { options, answer, ask } = Logic.makeIntruder(l);
     const verdict = h('p', { class: 'verdict', 'aria-live': 'polite' });
     const btns = options.map((o, i) => h('button', { type: 'button', class: 'opt' }, h('span', { class: 'n' }, NUM[i]), h('span', null, o)));
     btns.forEach((b, i) => b.addEventListener('click', () => {
@@ -167,13 +167,15 @@
       btns[answer].classList.add('right');
       if (!ok) b.classList.add('wrong');
       verdict.className = 'verdict ' + (ok ? 'right' : 'wrong');
-      verdict.textContent = ok ? '맞음 — 목록에 없는 보기를 골랐어요.' : `틀림 — 정답은 ${NUM[answer]}. 나머지 셋은 목록에 있는 항목이에요.`;
+      verdict.textContent = ask === 'in'
+        ? (ok ? '맞음 — 목록에 있는 항목을 골랐어요.' : `틀림 — 정답은 ${NUM[answer]}. 나머지 셋은 목록에 없는 보기예요.`)
+        : (ok ? '맞음 — 목록에 없는 보기를 골랐어요.' : `틀림 — 정답은 ${NUM[answer]}. 나머지 셋은 목록에 있는 항목이에요.`);
       record('lists', l.id, ok);
       card.querySelector('.card-meta').replaceWith(cardMeta(l));
       body.append(h('button', { type: 'button', class: 'again', onclick: () => renderIntruder(l, body, card) }, '다른 조합으로'));
     }));
     body.replaceChildren(
-      h('p', { class: 'prompt' }, `다음 중 「${l.title}」에 해당하지 않는 것은?`),
+      h('p', { class: 'prompt' }, `다음 중 「${l.title}」에 ${ask === 'in' ? '해당하는' : '해당하지 않는'} 것은?`),
       h('ul', { class: 'options' }, btns.map((b) => h('li', null, b))),
       verdict,
     );
@@ -196,7 +198,8 @@
       if (mode === 'recall') renderRecall(l, body);
       else renderIntruder(l, body, card);
     };
-    for (const [mode, label] of [['recall', '떠올리기'], ['intruder', '아닌 것 고르기']]) {
+    const pickLabel = l.items.length < 3 ? '해당하는 것 고르기' : '아닌 것 고르기';
+    for (const [mode, label] of [['recall', '떠올리기'], ['intruder', pickLabel]]) {
       const b = h('button', { type: 'button', class: 'mode', 'aria-pressed': 'false', 'data-mode': mode, onclick: () => setMode(mode) }, label);
       modeBtns.push(b);
     }

@@ -22,12 +22,18 @@
   }
 
   // 진짜 3개 + 목록 고유의 가짜 후보 1개. 시험이 "아닌 것 고르기"라서 이 형식을 그대로 쓴다.
+  // 항목이 2개뿐인 목록은 4지선다를 만들 수 없어 진짜 1개 + 가짜 3개에서 "해당하는 것"을 고르게 한다.
   function makeIntruder(list, rng) {
     const rand = rng || Math.random;
+    if (list.items.length < 3) {
+      const real = list.items[Math.floor(rand() * list.items.length)];
+      const options = shuffle(shuffle(list.fakes, rand).slice(0, 3).concat([real]), rand);
+      return { options, answer: options.indexOf(real), ask: 'in' };
+    }
     const reals = shuffle(list.items, rand).slice(0, 3);
     const fake = list.fakes[Math.floor(rand() * list.fakes.length)];
     const options = shuffle(reals.concat([fake]), rand);
-    return { options, answer: options.indexOf(fake) };
+    return { options, answer: options.indexOf(fake), ask: 'out' };
   }
 
   function makeChoice(q, rng) {

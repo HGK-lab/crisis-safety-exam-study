@@ -17,7 +17,7 @@ test('lists: unique ids, >=2 items, fakes never overlap items', () => {
   for (const l of LISTS) {
     assert.ok(CHS.includes(l.ch), l.id);
     assert.ok(l.items.length >= 2, l.id);
-    assert.ok(l.fakes.length >= 1, l.id);
+    assert.ok(l.fakes.length >= (l.items.length < 3 ? 3 : 1), l.id);
     assert.ok(l.src, l.id);
     for (const f of l.fakes) assert.ok(!l.items.includes(f), `${l.id}: ${f}`);
     assert.equal(new Set(l.items).size, l.items.length, l.id);
