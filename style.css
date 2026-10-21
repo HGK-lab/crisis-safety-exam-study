@@ -157,6 +157,12 @@ button { cursor: pointer; }
 .qmeta { display: flex; gap: 8px; align-items: center; font-size: 0.82rem; color: var(--muted); }
 .qmeta .count { font-weight: 700; color: var(--ink); }
 .qtext { font-size: 1.05rem; font-weight: 700; margin: 10px 0 14px; line-height: 1.55; }
+.answer-box { width: 100%; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 4px; padding: 10px 12px; font: inherit; line-height: 1.5; resize: vertical; }
+.answer-box:read-only { background: var(--paper); }
+.kw { margin: 6px 0 0; padding: 0; list-style: none; font-weight: 500; }
+.kw .right { color: var(--green); }
+.kw .wrong { color: var(--red); }
+.model { margin: 0 0 6px; }
 .explain { margin-top: 12px; padding: 10px 12px; background: var(--paper); border-radius: 4px; font-size: 0.92rem; }
 .next { margin-top: 12px; width: 100%; border: 0; background: var(--ink); color: var(--paper); font-weight: 700; padding: 11px; border-radius: 4px; }
 .summary { font-size: 1.1rem; font-weight: 700; }

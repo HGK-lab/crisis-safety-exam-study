@@ -41,7 +41,14 @@
     return { options, answer: options.indexOf(q.correct) };
   }
 
-  const api = { seededRng, shuffle, makeIntruder, makeChoice };
+  // 서술형: 키워드 묶음마다 all의 낱말이 전부 들어 있어야 맞음. 띄어쓰기는 무시한다.
+  function gradeKeywords(text, keywords) {
+    const t = String(text || '').replace(/\s+/g, '');
+    const hits = keywords.map((k) => k.all.every((w) => t.includes(w.replace(/\s+/g, ''))));
+    return { hits, ok: hits.every(Boolean) };
+  }
+
+  const api = { seededRng, shuffle, makeIntruder, makeChoice, gradeKeywords };
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
   else root.Logic = api;
 })(this);

@@ -2,7 +2,7 @@
   const { LISTS, NOTES, CHAPTERS, QUESTIONS, Logic } = window;
   const STORE_KEY = 'crisis-exam-v1';
   const STAR = { exam: '시험 출제 확인', prof: '교수 강조' };
-  const TYPE = { judge: '옳은 것·아닌 것', pair: '짝 구분', source: '누구의 정의', blank: '교안 빈칸', case: '사례 적용' };
+  const TYPE = { judge: '옳은 것·아닌 것', pair: '짝 구분', source: '누구의 정의', blank: '교안 빈칸', case: '사례 적용', write: '서술형' };
   const NUM = ['①', '②', '③', '④'];
 
   // ── 기록 (localStorage는 막힐 수 있어 항상 try/catch) ──
@@ -118,6 +118,7 @@
       h('div', { class: 'rules' },
         h('ol', null,
           h('li', null, '대부분 "아닌 것을 고르시오" 4지선다'),
+          h('li', null, '"쓰시오"로 나오면 키워드가 꼭 들어가야 정답 (예: 사고 예방 2가지 방법)'),
           h('li', null, '항목이 3~4개인 원리·개념·정의는 다 나온다'),
           h('li', null, '안 배운 범위에서 나온 문제는 3번에 체크하면 정답 처리')),
         progress),
@@ -253,7 +254,41 @@
     renderQuiz();
   }
 
+  function nextBtn() {
+    const last = quiz.idx === quiz.order.length - 1;
+    return h('button', { type: 'button', class: 'next', onclick: () => { quiz.idx++; renderQuiz(); window.scrollTo(0, 0); } }, last ? '결과 보기' : '다음 문제');
+  }
+
+  function qHead(q) {
+    return h('div', { class: 'qmeta' },
+      h('span', { class: 'count' }, `${quiz.idx + 1} / ${quiz.order.length}`),
+      h('span', null, `${q.ch}장 · ${TYPE[q.type]}`),
+      badge(q.star));
+  }
+
+  // 서술형: 써 본 답에 키워드 묶음이 다 들어 있는지 본다.
+  function renderWrite(q) {
+    const after = h('div', { 'aria-live': 'polite' });
+    const box = h('textarea', { class: 'answer-box', rows: '4', 'aria-label': '답 쓰기', placeholder: '답을 써 보세요' });
+    const grade = h('button', { type: 'button', class: 'next' }, '채점');
+    grade.addEventListener('click', () => {
+      const { hits, ok } = Logic.gradeKeywords(box.value, q.keywords);
+      box.readOnly = true;
+      grade.remove();
+      quiz.answered++; if (ok) quiz.score++;
+      record('qs', q.id, ok);
+      after.replaceChildren(
+        h('p', { class: 'verdict ' + (ok ? 'right' : 'wrong') }, ok ? '맞음 — 키워드가 다 들어갔어요' : '틀림 — 빠진 키워드가 있어요'),
+        h('ul', { class: 'kw' }, q.keywords.map((k, i) => h('li', { class: hits[i] ? 'right' : 'wrong' }, hits[i] ? '✓ ' : '✗ ', k.label))),
+        h('div', { class: 'explain' }, h('p', { class: 'model' }, h('strong', null, '모범 답안 '), q.model), q.explain, h('p', { class: 'src' }, '근거: ', q.src)),
+        nextBtn(),
+      );
+    });
+    return h('article', { class: 'qcard' }, qHead(q), h('p', { class: 'qtext' }, q.q), box, grade, after);
+  }
+
   function renderQuestion(q) {
+    if (q.type === 'write') return renderWrite(q);
     const { options, answer } = Logic.makeChoice(q);
     const after = h('div', { 'aria-live': 'polite' });
     const btns = options.map((o, i) => h('button', { type: 'button', class: 'opt' }, h('span', { class: 'n' }, NUM[i]), h('span', null, o)));
@@ -264,18 +299,14 @@
       if (!ok) b.classList.add('wrong');
       quiz.answered++; if (ok) quiz.score++;
       record('qs', q.id, ok);
-      const last = quiz.idx === quiz.order.length - 1;
       after.replaceChildren(
         h('p', { class: 'verdict ' + (ok ? 'right' : 'wrong') }, ok ? '맞음' : `틀림 — 정답은 ${NUM[answer]}`),
         h('div', { class: 'explain' }, q.explain, h('p', { class: 'src' }, '근거: ', q.src)),
-        h('button', { type: 'button', class: 'next', onclick: () => { quiz.idx++; renderQuiz(); window.scrollTo(0, 0); } }, last ? '결과 보기' : '다음 문제'),
+        nextBtn(),
       );
     }));
     return h('article', { class: 'qcard' },
-      h('div', { class: 'qmeta' },
-        h('span', { class: 'count' }, `${quiz.idx + 1} / ${quiz.order.length}`),
-        h('span', null, `${q.ch}장 · ${TYPE[q.type]}`),
-        badge(q.star)),
+      qHead(q),
       h('p', { class: 'qtext' }, q.q),
       h('ul', { class: 'options' }, btns.map((b) => h('li', null, b))),
       after,
@@ -307,7 +338,7 @@
     }
     view.replaceChildren(
       h('h2', { class: 'view-title' }, '실전 문제'),
-      h('p', { class: 'view-sub' }, `직접 쓴 ${QUESTIONS.length}문항. 짝 구분, 누구의 정의, 사례 적용, 교안 빈칸.`),
+      h('p', { class: 'view-sub' }, `직접 쓴 ${QUESTIONS.length}문항. 짝 구분, 누구의 정의, 사례 적용, 교안 빈칸, 서술형.`),
       h('div', { class: 'filters' }, filters.map(([v, label]) => chip(label, quiz.filter === v, () => { quiz.filter = v; quiz.armReset = false; startQuiz(false); }))),
       h('div', { class: 'toolbar' },
         h('button', { type: 'button', class: 'tool', onclick: () => startQuiz(true) }, '섞기'),

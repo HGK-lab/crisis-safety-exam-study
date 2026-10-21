@@ -42,16 +42,28 @@ test('notes: chapters, list links and blank kinds are valid', () => {
   for (const ch of CHS) assert.ok(NOTES.some((n) => n.ch === ch), `ch ${ch}`);
 });
 
-test('questions: 30~40, 3 distinct wrong answers, source on each', () => {
-  assert.ok(QUESTIONS.length >= 30 && QUESTIONS.length <= 40, String(QUESTIONS.length));
+test('questions: 30~45, 3 distinct wrong answers (or keywords for write), source on each', () => {
+  assert.ok(QUESTIONS.length >= 30 && QUESTIONS.length <= 45, String(QUESTIONS.length));
   assert.equal(new Set(QUESTIONS.map((q) => q.id)).size, QUESTIONS.length);
   for (const q of QUESTIONS) {
     assert.ok(CHS.includes(q.ch), q.id);
+    assert.ok(q.q && q.explain && q.src, q.id);
+    assert.ok(['judge', 'pair', 'source', 'blank', 'case', 'write'].includes(q.type), q.id);
+    if (q.type === 'write') {
+      assert.ok(q.model && q.keywords.length, q.id);
+      for (const k of q.keywords) assert.ok(k.label && k.all.length, q.id);
+      continue;
+    }
     assert.equal(q.wrong.length, 3, q.id);
     assert.equal(new Set([q.correct, ...q.wrong]).size, 4, q.id);
-    assert.ok(q.q && q.explain && q.src, q.id);
-    assert.ok(['judge', 'pair', 'source', 'blank', 'case'].includes(q.type), q.id);
   }
+});
+
+test('write questions: the model answer passes its own keywords', async () => {
+  const { gradeKeywords } = (await import('node:module')).createRequire(import.meta.url)('../logic.js');
+  const writes = QUESTIONS.filter((q) => q.type === 'write');
+  assert.ok(writes.some((q) => q.id === 'q-prevent2-write'));
+  for (const q of writes) assert.ok(gradeKeywords(q.model, q.keywords).ok, q.id);
 });
 
 test('questions: chapters 4 and 5 carry the most weight', () => {
@@ -75,7 +87,7 @@ test('blank questions only use confirmed blanks, and maslow blank is asked', () 
 test('nothing out of scope is asked', () => {
   const banned = ['신도미노', '버드', '소화기', '옥내소화전', '축압식', '가압식', '소화약제'];
   for (const q of QUESTIONS) {
-    const text = [q.q, q.correct, ...q.wrong].join(' ');
+    const text = [q.q, q.correct, ...(q.wrong || []), q.model].join(' ');
     for (const w of banned) assert.ok(!text.includes(w), `${q.id}: ${w}`);
   }
 });

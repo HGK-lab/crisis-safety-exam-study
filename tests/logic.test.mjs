@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
 
 const require = createRequire(import.meta.url);
-const { makeIntruder, makeChoice, shuffle, seededRng } = require('../logic.js');
+const { makeIntruder, makeChoice, shuffle, seededRng, gradeKeywords } = require('../logic.js');
 
 const list = {
   id: 'demo',
@@ -66,4 +66,12 @@ test('makeIntruder on a 2-item list asks for the one real item among 3 fakes', (
     assert.equal(options.filter((o) => two.items.includes(o)).length, 1);
   }
   assert.equal(makeIntruder(list, seededRng(1)).ask, 'out');
+});
+
+test('gradeKeywords needs every word of every group, ignoring spaces', () => {
+  const kw = [{ label: '환경 개선', all: ['환경', '개선'] }, { label: '교육으로 행동 변화', all: ['교육', '행동', '변화'] }];
+  assert.deepEqual(gradeKeywords('환경 개선, 교육으로 행동 변화', kw), { hits: [true, true], ok: true });
+  assert.deepEqual(gradeKeywords('환경개선 / 교 육', kw), { hits: [true, false], ok: false });
+  assert.deepEqual(gradeKeywords('처벌 강화', kw), { hits: [false, false], ok: false });
+  assert.equal(gradeKeywords('', kw).ok, false);
 });
